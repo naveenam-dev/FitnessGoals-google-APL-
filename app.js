@@ -6,7 +6,8 @@ let state = {
 };
 
 // API Base URL (adjust if hosted elsewhere)
-const API_BASE = 'http://localhost:5000/api';
+// const API_BASE = 'http://localhost:8080/api';
+const API_BASE = '/api';
 
 // Authentication
 function getToken() {
@@ -32,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupModal();
     setupEditForm();
     updateEditIntensityLabel();
-    
+
     checkAuth();
 });
 
@@ -40,7 +41,7 @@ async function checkAuth() {
     const token = getToken();
     const authView = document.getElementById('auth-view');
     const mainNav = document.getElementById('main-nav-links');
-    
+
     if (!token) {
         // Not logged in
         document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
@@ -53,7 +54,7 @@ async function checkAuth() {
         mainNav.style.display = 'flex';
         const username = localStorage.getItem('aura_username') || '';
         document.getElementById('greeting-title').textContent = `Ready to crush it today, ${username}?`;
-        
+
         // Show dashboard
         document.querySelector('[data-tab="dashboard"]').click();
         await initApp();
@@ -76,13 +77,13 @@ function initNavigation() {
             const targetViewId = item.getAttribute('data-tab') + '-view';
             views.forEach(view => {
                 view.classList.remove('active');
-                if(view.id === targetViewId) {
+                if (view.id === targetViewId) {
                     view.classList.add('active');
                 }
             });
         });
     });
-    
+
     if (logoutBtn) {
         logoutBtn.addEventListener('click', () => {
             removeToken();
@@ -98,7 +99,7 @@ function setupAuthForms() {
     const authTitle = document.getElementById('auth-title');
     const authToggleText = document.getElementById('auth-toggle-text');
     const authError = document.getElementById('auth-error');
-    
+
     let isLogin = true;
 
     toggleLink.addEventListener('click', (e) => {
@@ -114,11 +115,11 @@ function setupAuthForms() {
     authForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         authError.style.display = 'none';
-        
+
         const username = document.getElementById('auth-username').value;
         const password = document.getElementById('auth-password').value;
         const endpoint = isLogin ? '/auth/login' : '/auth/register';
-        
+
         try {
             const res = await fetch(`${API_BASE}${endpoint}`, {
                 method: 'POST',
@@ -126,7 +127,7 @@ function setupAuthForms() {
                 body: JSON.stringify({ username, password })
             });
             const data = await res.json();
-            
+
             if (!res.ok) {
                 throw new Error(data.error || 'Authentication failed');
             }
@@ -143,7 +144,7 @@ function setupAuthForms() {
                     body: JSON.stringify({ username, password })
                 });
                 const loginData = await loginRes.json();
-                if(loginRes.ok) {
+                if (loginRes.ok) {
                     setToken(loginData.token);
                     localStorage.setItem('aura_username', loginData.username);
                     checkAuth();
@@ -168,32 +169,32 @@ async function fetchWorkouts() {
         const res = await fetch(`${API_BASE}/workouts`, {
             headers: { 'Authorization': `Bearer ${getToken()}` }
         });
-        if(res.status === 401) {
+        if (res.status === 401) {
             removeToken();
             checkAuth();
             return [];
         }
-        if(!res.ok) throw new Error('Failed to fetch workouts');
+        if (!res.ok) throw new Error('Failed to fetch workouts');
         return await res.json();
-    } catch(err) {
+    } catch (err) {
         console.error(err);
         return [];
     }
 }
 
 function calculateStreak(workouts) {
-    if(!workouts || workouts.length === 0) return 0;
-    
+    if (!workouts || workouts.length === 0) return 0;
+
     // Sort workouts by date ascending
-    const sorted = [...workouts].sort((a,b) => new Date(a.date) - new Date(b.date));
+    const sorted = [...workouts].sort((a, b) => new Date(a.date) - new Date(b.date));
     let currentStreak = 1;
     let lastDate = new Date(sorted[0].date).toDateString();
-    
-    for(let i=1; i<sorted.length; i++) {
+
+    for (let i = 1; i < sorted.length; i++) {
         const d = new Date(sorted[i].date);
         const expected = new Date(lastDate);
         expected.setDate(expected.getDate() + 1);
-        
+
         if (d.toDateString() === expected.toDateString()) {
             currentStreak++;
             lastDate = d.toDateString();
@@ -203,16 +204,16 @@ function calculateStreak(workouts) {
             lastDate = d.toDateString();
         }
     }
-    
+
     // Check if the streak is still active today or yesterday
     const today = new Date().toDateString();
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
-    
-    if(lastDate !== today && lastDate !== yesterday.toDateString()) {
+
+    if (lastDate !== today && lastDate !== yesterday.toDateString()) {
         return 0; // Streak broken
     }
-    
+
     return currentStreak;
 }
 
@@ -220,7 +221,7 @@ async function initApp() {
     const workouts = await fetchWorkouts();
     state.workouts = workouts;
     state.streak = calculateStreak(workouts);
-    
+
     renderStreak(state.streak);
     renderRecentActivity(workouts);
     renderFullHistory(workouts);
@@ -232,13 +233,13 @@ async function initApp() {
 function renderProfile(workouts) {
     const username = localStorage.getItem('aura_username') || 'User';
     document.getElementById('profile-username').textContent = username;
-    
+
     const totalWorkouts = workouts.length;
     const totalMinutes = workouts.reduce((sum, w) => sum + w.duration, 0);
-    const avgIntensity = totalWorkouts > 0 
-        ? (workouts.reduce((sum, w) => sum + w.intensity, 0) / totalWorkouts).toFixed(1) 
+    const avgIntensity = totalWorkouts > 0
+        ? (workouts.reduce((sum, w) => sum + w.intensity, 0) / totalWorkouts).toFixed(1)
         : 0;
-        
+
     document.getElementById('total-workouts-stat').textContent = totalWorkouts;
     document.getElementById('total-minutes-stat').textContent = totalMinutes;
     document.getElementById('avg-intensity-stat').textContent = avgIntensity;
@@ -248,13 +249,13 @@ function setupForm() {
     const form = document.getElementById('log-form');
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        
+
         const type = document.getElementById('workout-type').value;
         const duration = parseInt(document.getElementById('workout-duration').value);
         const intensity = parseInt(document.getElementById('workout-intensity').value);
-        
+
         const workoutData = { type, duration, intensity };
-        
+
         try {
             const res = await fetch(`${API_BASE}/workouts`, {
                 method: 'POST',
@@ -264,23 +265,23 @@ function setupForm() {
                 },
                 body: JSON.stringify(workoutData)
             });
-            
-            if(res.status === 401) {
+
+            if (res.status === 401) {
                 removeToken();
                 checkAuth();
                 return;
             }
-            if(!res.ok) throw new Error("Failed to log workout");
-            
+            if (!res.ok) throw new Error("Failed to log workout");
+
             // Reset form
             form.reset();
             document.getElementById('intensity-value').textContent = "5";
-            
+
             // Switch to dashboard
             document.querySelector('[data-tab="dashboard"]').click();
             await initApp(); // Refresh data from server
-            
-        } catch(err) {
+
+        } catch (err) {
             console.error(err);
             alert("Error logging workout: " + err.message);
         }
@@ -299,14 +300,14 @@ function updateIntensityLabel() {
 
 function renderStreak(streakDays) {
     document.getElementById('streak-days').textContent = streakDays;
-    
+
     // Progress circle (Max visual at 30 days)
     const maxDays = 30;
     const progress = Math.min(streakDays / maxDays, 1);
     const circle = document.getElementById('streak-progress');
     // Circumference = 2 * pi * r = 2 * 3.14 * 45 ≈ 283
     const offset = 283 - (283 * progress);
-    
+
     // Slight delay for animation effect
     setTimeout(() => {
         circle.style.strokeDashoffset = offset || 283;
@@ -316,9 +317,9 @@ function renderStreak(streakDays) {
 function renderRecentActivity(workouts) {
     const list = document.getElementById('recent-activity-list');
     list.innerHTML = '';
-    
+
     const recent = workouts.slice(0, 3);
-    if(recent.length === 0) {
+    if (recent.length === 0) {
         list.innerHTML = '<li><span style="color:var(--text-muted)">No workouts logged yet.</span></li>';
         return;
     }
@@ -326,13 +327,13 @@ function renderRecentActivity(workouts) {
     recent.forEach(w => {
         const date = new Date(w.date).toLocaleDateString();
         const li = document.createElement('li');
-        
+
         // Dynamic icon based on type
         let icon = "fa-dumbbell";
         let color = "var(--accent-cyan)";
-        if(w.type === 'Cardio') { icon = "fa-person-running"; color = "#f5576c"; }
-        if(w.type === 'Flexibility') { icon = "fa-seedling"; color = "#43e97b"; }
-        if(w.type === 'Rest') { icon = "fa-bed"; color = "#8892b0"; }
+        if (w.type === 'Cardio') { icon = "fa-person-running"; color = "#f5576c"; }
+        if (w.type === 'Flexibility') { icon = "fa-seedling"; color = "#43e97b"; }
+        if (w.type === 'Rest') { icon = "fa-bed"; color = "#8892b0"; }
 
         li.innerHTML = `
             <div style="display:flex; align-items:center; gap:15px;">
@@ -355,8 +356,8 @@ function renderRecentActivity(workouts) {
 function renderFullHistory(workouts) {
     const tbody = document.getElementById('full-history-list');
     tbody.innerHTML = '';
-    
-    if(workouts.length === 0) {
+
+    if (workouts.length === 0) {
         tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--text-muted)">No history available.</td></tr>';
         return;
     }
@@ -368,7 +369,7 @@ function renderFullHistory(workouts) {
             <td>${date}</td>
             <td style="color:#fff">${w.type}</td>
             <td>${w.duration} min</td>
-            <td><div style="display:inline-block; width:100%; max-width:100px; background:var(--panel-border); border-radius:10px; height:6px;"><div style="width:${w.intensity*10}%; height:100%; background:var(--gradient-primary); border-radius:10px;"></div></div></td>
+            <td><div style="display:inline-block; width:100%; max-width:100px; background:var(--panel-border); border-radius:10px; height:6px;"><div style="width:${w.intensity * 10}%; height:100%; background:var(--gradient-primary); border-radius:10px;"></div></div></td>
             <td>
                 <button class="btn-icon btn-edit" onclick="openEditModal('${w._id}')"><i class="fa-solid fa-pen-to-square"></i></button>
                 <button class="btn-icon btn-delete" onclick="deleteWorkout('${w._id}', this)"><i class="fa-solid fa-trash"></i></button>
@@ -381,25 +382,25 @@ function renderFullHistory(workouts) {
 // --- Edit/Delete Logic ---
 
 async function deleteWorkout(id, btn) {
-    if(!confirm("Are you sure you want to delete this workout?")) return;
-    
+    if (!confirm("Are you sure you want to delete this workout?")) return;
+
     try {
         const res = await fetch(`${API_BASE}/workouts/${id}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${getToken()}` }
         });
-        
-        if(!res.ok) throw new Error("Failed to delete workout");
-        
+
+        if (!res.ok) throw new Error("Failed to delete workout");
+
         // Animation
         const row = btn.closest('tr');
         row.classList.add('deleting');
-        
+
         setTimeout(async () => {
             await initApp(); // Refresh all data
         }, 400);
-        
-    } catch(err) {
+
+    } catch (err) {
         console.error(err);
         alert(err.message);
     }
@@ -407,21 +408,21 @@ async function deleteWorkout(id, btn) {
 
 function openEditModal(id) {
     const workout = state.workouts.find(w => w._id === id);
-    if(!workout) return;
-    
+    if (!workout) return;
+
     document.getElementById('edit-workout-id').value = workout._id;
     document.getElementById('edit-type').value = workout.type;
     document.getElementById('edit-duration').value = workout.duration;
     document.getElementById('edit-intensity').value = workout.intensity;
     document.getElementById('edit-intensity-value').textContent = workout.intensity;
-    
+
     // Format date for input[type="date"]
     const date = new Date(workout.date);
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     document.getElementById('edit-date').value = `${year}-${month}-${day}`;
-    
+
     document.getElementById('edit-modal').classList.add('active');
 }
 
@@ -432,9 +433,9 @@ function closeEditModal() {
 function setupModal() {
     const modal = document.getElementById('edit-modal');
     const closeBtn = document.getElementById('close-modal');
-    
+
     closeBtn.onclick = closeEditModal;
-    
+
     window.onclick = (e) => {
         if (e.target === modal) closeEditModal();
     };
@@ -444,13 +445,13 @@ function setupEditForm() {
     const form = document.getElementById('edit-form');
     form.onsubmit = async (e) => {
         e.preventDefault();
-        
+
         const id = document.getElementById('edit-workout-id').value;
         const type = document.getElementById('edit-type').value;
         const duration = parseInt(document.getElementById('edit-duration').value);
         const intensity = parseInt(document.getElementById('edit-intensity').value);
         const date = document.getElementById('edit-date').value;
-        
+
         try {
             const res = await fetch(`${API_BASE}/workouts/${id}`, {
                 method: 'PUT',
@@ -460,13 +461,13 @@ function setupEditForm() {
                 },
                 body: JSON.stringify({ type, duration, intensity, date })
             });
-            
-            if(!res.ok) throw new Error("Failed to update workout");
-            
+
+            if (!res.ok) throw new Error("Failed to update workout");
+
             closeEditModal();
             await initApp();
-            
-        } catch(err) {
+
+        } catch (err) {
             console.error(err);
             alert(err.message);
         }
@@ -503,7 +504,7 @@ function generateSuggestion(workouts) {
     const iconEl = document.getElementById('suggestion-icon');
     const iconContainer = iconEl.parentElement;
 
-    if(workouts.length === 0) {
+    if (workouts.length === 0) {
         titleEl.textContent = "Start moving!";
         descEl.textContent = "Log your first workout to get personalized suggestions.";
         iconEl.className = "fa-solid fa-person-running";
@@ -514,7 +515,7 @@ function generateSuggestion(workouts) {
     // Adaptive Logic Based on Last 3 Workouts
     const recent = workouts.slice(0, 3);
     const avgIntensity = recent.reduce((sum, w) => sum + w.intensity, 0) / (recent.length);
-    
+
     if (recent.length >= 3 && avgIntensity >= 8) {
         titleEl.textContent = "Take an Active Rest";
         descEl.textContent = "You've been pushing hard! Consider yoga, stretching or a light walk today to recover.";
@@ -528,7 +529,7 @@ function generateSuggestion(workouts) {
     } else {
         const hasCardio = recent.some(w => w.type === 'Cardio');
         const hasStrength = recent.some(w => w.type === 'Strength');
-        
+
         if (!hasCardio && recent.length >= 2) {
             titleEl.textContent = "Boost Your Heart Rate";
             descEl.textContent = "It looks like you haven't done cardio recently. Try a 20min run or HIIT.";

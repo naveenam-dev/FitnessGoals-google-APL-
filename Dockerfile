@@ -17,12 +17,12 @@ COPY . .
 RUN mkdir -p /app/data && chmod 777 /app/data
 
 # Set environment variables
-ENV PORT=5000
+ENV PORT=8080
 ENV NODE_ENV=production
 ENV DATABASE_PATH=/app/data/fitness_aura.sqlite
 
 # Expose port
-EXPOSE 5000
+EXPOSE 8080
 
 # Start the application
 CMD ["node", "server/server.js"]
